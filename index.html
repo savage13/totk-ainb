@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+        border: 0;
+        margin: 0;
+        width:100vw;
+        height: 100vh;
+        font-family: sans-serif;
+    }
+    svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: black;
+    }
+    .nodedata {
+        font-family: sans-serif;
+        font-size: 0.8em;
+        color: white;
+        padding: 1em;
+        border: 0px solid lime;
+    }
+    #side {
+        background: black;
+        color: white;
+        border: 0px solid lime;
+        position: relative;
+        height: 100%;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    #graph {
+        background: black;
+        color: white;
+        border: 0px solid lime;
+        position: relative;
+        height: 100%;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .label {
+        color: white;
+    }
+    .split {
+        display: flex;
+        flex-direction: row;
+        height: 100%;
+        position: relative;
+    }
+    .vsplit {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        position: relative;
+    }
+
+    .gutter {
+        background-color: #333;
+        background-repeat: no-repeat;
+        background-position: 50%;
+    }
+    .gutter.gutter-horizontal {
+        background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+        cursor: col-resize;
+    }
+    .gutter.gutter-vertical {
+        background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII=');
+        cursor: row-resize;
+    }
+    #nodelist {
+        font-size: 0.9em;
+        padding-left: 2em;
+        overflow: scroll;
+        height: 100%;
+        position: relative;
+    }
+    #ainblist {
+        font-size: 0.9em;
+        padding-left: 2em;
+        overflow: scroll;
+        height: 100%;
+        position: relative;
+    }
+    #nodelist0 {
+        position: relative;
+        height: 100%;
+        display: flex;
+        flex-flow: column
+    }
+    #ainbfiles {
+        position: relative;
+        height: 100%;
+        display: flex;
+        flex-flow: column
+    }
+    .search {
+        background: black;
+        color: white;
+        margin:0.3em;
+        margin-left: 1em;
+        margin-top: 0.3em;
+    }
+    .listitem {
+        margin-top: 0.2em;
+        margin-bottom: 0.2em;
+        cursor: pointer;
+    }
+    .listitem:hover {
+        cursor: pointer;
+        color: lightblue;
+    }
+    #title {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 0.3em;
+        padding: 0.5em;
+        z-index: 1000;
+        color: rgba(255,255,255,0.4);
+        width: 20ch;
+    }
+    a {
+        color: darkgray;
+    }
+    .title {
+        font-size: 1.2em;
+    }
+    .info {
+        font-size: 0.7em;
+    }
+    .header {
+        font-weight: bold;
+        font-size: 1.25em;
+        border-bottom: 1px solid rgba(255,255,255,0.5);
+        margin-bottom: 0.5em;
+    }
+    .section {
+        font-weight: bold;
+        font-size: 1.05em;
+        border-bottom: 1px solid rgba(255,255,255,0.5);
+        margin-bottom: 0.1em;
+        margin-top: 0.5em;
+    }
+    .item {
+        margin-left: 1.5em;
+    }
+    .item::marker {
+        color: rgb(180,255,180);
+    }
+    .typename {
+        color: #bbb;
+    }
+    .typevalue {
+        color: #bbb;
+    }
+    .part {
+        margin-left: 1.5em;
+        margin-top: 0.5em;
+        font-weight: bold;
+        color: rgba(255,255,255,0.9);
+    }
+    #raw {
+        font-size: 0.8em;
+    }
+    #style {
+        position: absolute;
+        bottom: 5em;
+        right: 10px;
+        z-index: 1000;
+        display: flex;
+        flex-flow: column;
+        display: none;
+    }
+    .focus {
+        font-weight: bold;
+        color: yellow;
+        background: purple;
+    }
+  </style>
+</head>
+<body>
+  <div id="style">
+    <select id="ranker">
+      <option>network-simplex</option>
+      <option>tight-tree</option>
+      <option>longest-path</option>
+    </select>
+    <select id="rankdir">
+      <option value="TB">top-bottom</option>
+      <option value="BT">bottom-top</option>
+      <option value="LR">left-right</option>
+      <option value="RL">right-left</option>
+    </select>
+    <select id="align">
+      <option value="UL">up-left</option>
+      <option value="UR">up-right</option>
+      <option value="DL">down-left</option>
+      <option value="DR">down-right</option>
+    </select>
+  </div>
+  <div id="title" title="click to remove">
+    <div class="title">TotK ainb viewer</div>
+    <div class="info"><a href="https://github.com/dt-12345/ainb">conversion and data format work</a>
+      from <a href="https://github.com/dt-12345">dt-12345</a></div>
+  </div>
+  <div class="split">
+    <div id="side" class="vsplit">
+      <div id="nodelist0">
+        <div class="part">Nodes <a id="raw" target=_blank href="nothing.json">raw ainb</a></div>
+        <input type="text" id="node_search" placeholder="search ..." class="search">
+        <div id="nodelist">
+        </div>
+      </div>
+      <div id="ainbfiles">
+        <div class="part">ainb Files</div>
+        <input type="text" id="ainb_search" placeholder="search ..." class="search">
+        <div id="ainblist"></div>
+      </div>
+    </div>
+    <div id="graph">
+      <svg><g/></svg>
+    </div>
+  </div>
+</body>
+<script src="main.js" type="module"></script>
+</html>
