@@ -69,13 +69,13 @@
     return gut;
   };
   var defaultElementStyleFn = function(dim, size2, gutSize) {
-    var style = {};
+    var style2 = {};
     if (!isString(size2)) {
-      style[dim] = calc + "(" + size2 + "% - " + gutSize + "px)";
+      style2[dim] = calc + "(" + size2 + "% - " + gutSize + "px)";
     } else {
-      style[dim] = size2;
+      style2[dim] = size2;
     }
-    return style;
+    return style2;
   };
   var defaultGutterStyleFn = function(dim, gutSize) {
     var obj;
@@ -146,15 +146,15 @@
       clientSize = "clientHeight";
     }
     function setElementSize(el, size2, gutSize, i) {
-      var style = elementStyle(dimension, size2, gutSize, i);
-      Object.keys(style).forEach(function(prop) {
-        el.style[prop] = style[prop];
+      var style2 = elementStyle(dimension, size2, gutSize, i);
+      Object.keys(style2).forEach(function(prop) {
+        el.style[prop] = style2[prop];
       });
     }
     function setGutterSize(gutterElement, gutSize, i) {
-      var style = gutterStyle(dimension, gutSize, i);
-      Object.keys(style).forEach(function(prop) {
-        gutterElement.style[prop] = style[prop];
+      var style2 = gutterStyle(dimension, gutSize, i);
+      Object.keys(style2).forEach(function(prop) {
+        gutterElement.style[prop] = style2[prop];
       });
     }
     function getSizes() {
@@ -457,12 +457,12 @@
           );
         }
         if (preserveStyles !== true) {
-          var style = elementStyle(
+          var style2 = elementStyle(
             dimension,
             pair.a.size,
             pair[aGutterSize]
           );
-          Object.keys(style).forEach(function(prop) {
+          Object.keys(style2).forEach(function(prop) {
             elements[pair.a].element.style[prop] = "";
             elements[pair.b].element.style[prop] = "";
           });
@@ -10068,11 +10068,35 @@
   var zoom = null;
   var _n = "n";
   var ainb_files = [];
-  title.addEventListener("click", (ev) => {
-    title.remove();
-  });
-  node_search.addEventListener("input", node_search_term);
-  ainb_search.addEventListener("input", ainb_search_term);
+  function $(x2) {
+    return document.querySelector(x2);
+  }
+  var title = $("#title");
+  var node_search = $("#node_search");
+  var ainb_search = $("#ainb_search");
+  var style = $("#style");
+  var styleshow = $("#styleshow");
+  if (title && node_search && ainb_search) {
+    title.addEventListener("click", (_ev) => {
+      title.remove();
+    });
+    node_search.addEventListener("input", node_search_term);
+    ainb_search.addEventListener("input", ainb_search_term);
+  }
+  if (style && styleshow) {
+    styleshow.addEventListener("mouseover", (_ev) => {
+      style.style.visibility = "visible";
+    });
+    styleshow.addEventListener("mouseleave", (_ev) => {
+      style.style.visibility = "hidden";
+    });
+    style.addEventListener("mouseleave", (_ev) => {
+      style.style.visibility = "hidden";
+    });
+    style.addEventListener("mouseover", (_ev) => {
+      style.style.visibility = "visible";
+    });
+  }
   function node_search_term() {
     let term = node_search.value.trim().toLowerCase();
     const els = [...nodelist.children];
@@ -10303,7 +10327,7 @@
       }
       g.setEdge(s, t, options, key);
     };
-    const style = "stroke: white; fill: none; stroke-width: 2px;";
+    const style2 = "stroke: white; fill: none; stroke-width: 2px;";
     const curve = basis_default2;
     const labelStyle = "fill: white; stroke-width: 0px; font-family: sans-serif; font-size: 1.1em;";
     const arrowheadStyle = "fill: white;";
@@ -10318,7 +10342,7 @@
           if (link.index !== void 0 && link.index >= 0) {
             setEdge(link.index, node.index, {
               label: link.label,
-              style,
+              style: style2,
               curve,
               labelStyle,
               arrowheadStyle
@@ -10326,7 +10350,7 @@
           } else if (link["Blackboard Index"] >= 0) {
             setEdge(BB, node.index, {
               label: link.label,
-              style,
+              style: style2,
               curve,
               labelStyle,
               arrowheadStyle
@@ -10338,7 +10362,7 @@
             if (idx >= 0) {
               setEdge(idx, node.index, {
                 label: link.label,
-                style,
+                style: style2,
                 curve,
                 labelStyle,
                 arrowheadStyle
@@ -10352,7 +10376,7 @@
           if (item["Blackboard Index"] >= 0) {
             setEdge(BB, node.index, {
               label: item.name,
-              style,
+              style: style2,
               curve,
               labelStyle,
               arrowheadStyle
@@ -10374,7 +10398,7 @@
         if (plug.index >= 0) {
           setEdge(plug.index, node.index, {
             label: plug.label,
-            style,
+            style: style2,
             curve,
             labelStyle,
             arrowheadStyle

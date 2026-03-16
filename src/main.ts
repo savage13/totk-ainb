@@ -16,9 +16,33 @@ let zoom: any = null
 const _n = 'n'
 let ainb_files = []
 
-title.addEventListener('click', (ev) => { title.remove() })
-node_search.addEventListener('input', node_search_term)
-ainb_search.addEventListener('input', ainb_search_term)
+function $(x: string) { return document.querySelector(x); }
+
+const title = $('#title')
+const node_search = $('#node_search')
+const ainb_search = $('#ainb_search')
+const style = $('#style') as HTMLElement
+const styleshow = $('#styleshow')
+
+if (title && node_search && ainb_search) {
+    title.addEventListener('click', (_ev) => { title.remove() })
+    node_search.addEventListener('input', node_search_term)
+    ainb_search.addEventListener('input', ainb_search_term)
+}
+if (style && styleshow) {
+    styleshow.addEventListener('mouseover', (_ev) => {
+        style.style.visibility = "visible"
+    })
+    styleshow.addEventListener('mouseleave', (_ev) => {
+        style.style.visibility = "hidden"
+    })
+    style.addEventListener('mouseleave', (_ev) => {
+        style.style.visibility = "hidden"
+    })
+    style.addEventListener('mouseover', (_ev) => {
+        style.style.visibility = "visible"
+    })
+}
 
 function node_search_term() {
     let term = node_search.value.trim().toLowerCase()
@@ -98,7 +122,7 @@ function addSection(node: Node, el: HTMLElement, header: string, key: string) {
 }
 
 
-function create_node(node) {
+function create_node(node: Node) {
     const el = document.createElement('div')
     el.classList.add('nodedata')
     if (node.name) {
@@ -113,7 +137,7 @@ function create_node(node) {
 }
 
 
-function node_color(node) {
+function node_color(node: Node) {
     let s = 0.95
     let v = 0.55
     switch (node.type) {
@@ -144,7 +168,7 @@ function node_color(node) {
     return '#63718e'
 }
 
-async function load_json(filename) {
+async function load_json(filename: string) {
     const res = await fetch(filename)
     return res.json()
 }

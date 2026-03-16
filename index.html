@@ -167,39 +167,61 @@
     }
     #style {
         position: absolute;
-        bottom: 5em;
-        right: 10px;
-        z-index: 1000;
         display: flex;
         flex-flow: column;
-        display: none;
+        bottom: 16px;
+        right: 16px;
+        visibility: hidden;
+        gap: 3px;
+        border: 1px solid rgba(255,255,255,0.4);
+        border-radius: 0.3em;
+        z-index: 3005;
+        padding: 0.3em;
+        background: rgba(0,0,0,0.66);
     }
-    .focus {
-        font-weight: bold;
-        color: yellow;
-        background: purple;
+    #styleshow {
+        position: absolute;
+        bottom: 5em;
+        right: 0px;
+        color: rgba(255,255,255,0.6);
+        border: 1px solid rgba(255,255,255,0.4);
+        border-radius: 0.3em;
+        z-index: 2000;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        display: flex;
+        flex-flow: column;
+        align-items: center;
+        justify-content: center;
     }
   </style>
 </head>
 <body>
-  <div id="style">
-    <select id="ranker">
-      <option>network-simplex</option>
-      <option>tight-tree</option>
-      <option>longest-path</option>
-    </select>
-    <select id="rankdir">
-      <option value="TB">top-bottom</option>
-      <option value="BT">bottom-top</option>
-      <option value="LR">left-right</option>
-      <option value="RL">right-left</option>
-    </select>
-    <select id="align">
-      <option value="UL">up-left</option>
-      <option value="UR">up-right</option>
-      <option value="DL">down-left</option>
-      <option value="DR">down-right</option>
-    </select>
+  <div id="styleshow">
+    <div style="font-size: 26px; text-align:center;">&#9881;</div>
+    <div id="style">
+      Layout
+      <select id="ranker">
+        <option>network-simplex</option>
+        <option>tight-tree</option>
+        <option>longest-path</option>
+      </select>
+      Direction
+      <select id="rankdir">
+        <option value="TB">top-bottom</option>
+        <option value="BT">bottom-top</option>
+        <option value="LR">left-right</option>
+        <option value="RL">right-left</option>
+      </select>
+      Align
+      <select id="align">
+        <option value="UL">up-left</option>
+        <option value="UR">up-right</option>
+        <option value="DL">down-left</option>
+        <option value="DR">down-right</option>
+      </select>
+    </div>
   </div>
   <div id="title" title="click to remove">
     <div class="title">TotK ainb viewer</div>
