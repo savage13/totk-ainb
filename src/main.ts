@@ -11,10 +11,41 @@ import { hsv2hex } from './color'
 Split(['#side', '#graph'], { sizes: [20, 80], minSize: 200 })
 Split(['#nodelist0', '#ainbfiles'], { sizes: [50, 50], minSize: 50, direction: 'vertical' })
 
+const STYLE = {
+    edge: {
+        default: {
+            color: 'white',
+            width: "2px",
+        },
+        focus: {
+            output: {
+                color: "#f1f180", // yellow-ish
+                width: "3px",
+            },
+            input: {
+                color: "#80f1f1", // blue-ish
+                width: "3px",
+            }
+        }
+    },
+    node: {
+        default: {
+            color: 'none',
+            width: "0px",
+        },
+        focus: {
+            color: "#f7e7ad",
+            width: "2px",
+        },
+    }
+}
 let g: any = null
 let zoom: any = null
 const _n = 'n'
 let ainb_files = []
+let _filename = ""
+const BB = 314159
+
 
 function $(x: string) { return document.querySelector(x); }
 
@@ -221,7 +252,28 @@ function scroll_to_node(id: string) {
 function node_set_border(id: string, color: string, width: string) {
     let el = d3.selectAll('g.node').filter((v: string) => { return v == id })
     el.select('rect').style('stroke', color).style('stroke-width', width)
+}
+function edge_set_border(id: string, color: string, width: string) {
+    let el = d3.selectAll('g.edgePath').filter((v: any) => { return v.name == id })
+    el.select('path').style('stroke', color).style('stroke-width', width).style('fill', 'color')
+    el.select('marker').select('path').style('fill', color)
+}
 
+function focus_node(id: string) {
+    node_set_border(id, STYLE.node.focus.color, STYLE.node.focus.width)
+    const edges = g.edges().filter((e: any) => e.v == id || e.w == id)
+    for (const edge of edges) {
+        const io = (edge.v == id) ? STYLE.edge.focus.output : STYLE.edge.focus.input
+        edge_set_border(edge.name, io.color, io.width)
+    }
+}
+
+function unfocus_node(id: string) {
+    node_set_border(id, STYLE.node.default.color, STYLE.node.default.width)
+    const edges = g.edges().filter((e: any) => e.v == id || e.w == id)
+    for (const edge of edges) {
+        edge_set_border(edge.name, STYLE.edge.default.color, STYLE.edge.default.width)
+    }
 }
 
 function node_link(node: Node) {
@@ -230,13 +282,10 @@ function node_link(node: Node) {
     el.textContent = node.label
     el.classList.add('listitem')
     el.addEventListener('click', (_ev) => { scroll_to_node(id) })
-    el.addEventListener('mouseover', (_ev) => { node_set_border(id, '#f7e7ad', '1.5px') })
-    el.addEventListener('mouseleave', (_ev) => { node_set_border(id, 'none', '0px') })
+    el.addEventListener('mouseover', (_ev) => { focus_node(id) })
+    el.addEventListener('mouseleave', (_ev) => { unfocus_node(id) })
     return el
 }
-let _filename = ""
-
-const BB = 314159
 
 async function show_graph(filename: string,) {
     _filename = filename
@@ -244,10 +293,15 @@ async function show_graph(filename: string,) {
 
     raw.setAttribute('href', `ainb_as_json_v2.0/${filename}`)
 
+    // Remove all nodes before rebuilding
+    if (g) {
+        g.nodes().forEach((id: string) => g.removeNode(id))
+    }
+
     g = new dagreD3.graphlib.Graph({ multigraph: true }).setGraph({});
 
-    g.graph().ranksep = 50
-    g.graph().nodesep = 5
+    g.graph().ranksep = ranksep.value
+    g.graph().nodesep = nodesep.value
     g.graph().ranker = ranker.value//'tight-tree'
     g.graph().rankdir = rankdir.value//'tight-tree'
     g.graph().align = align.value
@@ -351,11 +405,18 @@ async function show_graph(filename: string,) {
     // Run the renderer. This is what draws the final graph.
     render(inner, g)
 
-
     // Allow clicking and selecting of text on nodes
     svg.selectAll('g.node').each(function(v: any) {
         this.addEventListener("mousedown", (ev: any) => {
             ev.stopPropagation() // preventDefault here prevent text selection
+        })
+        this.addEventListener("mouseover", (ev: any) => {
+            ev.stopPropagation() // preventDefault here prevent text selection
+            focus_node(v)
+        })
+        this.addEventListener("mouseleave", (ev: any) => {
+            ev.stopPropagation() // preventDefault here prevent text selection
+            unfocus_node(v)
         })
         this.addEventListener("click", (ev: any) => {
             ev.stopPropagation()
@@ -403,6 +464,12 @@ rankdir.addEventListener('change', (ev) => {
     show_graph(_filename)
 })
 align.addEventListener('change', (ev) => {
+    show_graph(_filename)
+})
+ranksep.addEventListener('input', (ev) => {
+    show_graph(_filename)
+})
+nodesep.addEventListener('input', (ev) => {
     show_graph(_filename)
 })
 

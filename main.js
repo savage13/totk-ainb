@@ -10064,10 +10064,42 @@
   // src/main.ts
   split_es_default(["#side", "#graph"], { sizes: [20, 80], minSize: 200 });
   split_es_default(["#nodelist0", "#ainbfiles"], { sizes: [50, 50], minSize: 50, direction: "vertical" });
+  var STYLE = {
+    edge: {
+      default: {
+        color: "white",
+        width: "2px"
+      },
+      focus: {
+        output: {
+          color: "#f1f180",
+          // yellow-ish
+          width: "3px"
+        },
+        input: {
+          color: "#80f1f1",
+          // blue-ish
+          width: "3px"
+        }
+      }
+    },
+    node: {
+      default: {
+        color: "none",
+        width: "0px"
+      },
+      focus: {
+        color: "#f7e7ad",
+        width: "2px"
+      }
+    }
+  };
   var g = null;
   var zoom = null;
   var _n = "n";
   var ainb_files = [];
+  var _filename = "";
+  var BB = 314159;
   function $(x2) {
     return document.querySelector(x2);
   }
@@ -10286,6 +10318,28 @@
     });
     el.select("rect").style("stroke", color2).style("stroke-width", width2);
   }
+  function edge_set_border(id2, color2, width2) {
+    let el = selectAll_default2("g.edgePath").filter((v) => {
+      return v.name == id2;
+    });
+    el.select("path").style("stroke", color2).style("stroke-width", width2).style("fill", "color");
+    el.select("marker").select("path").style("fill", color2);
+  }
+  function focus_node(id2) {
+    node_set_border(id2, STYLE.node.focus.color, STYLE.node.focus.width);
+    const edges = g.edges().filter((e) => e.v == id2 || e.w == id2);
+    for (const edge of edges) {
+      const io = edge.v == id2 ? STYLE.edge.focus.output : STYLE.edge.focus.input;
+      edge_set_border(edge.name, io.color, io.width);
+    }
+  }
+  function unfocus_node(id2) {
+    node_set_border(id2, STYLE.node.default.color, STYLE.node.default.width);
+    const edges = g.edges().filter((e) => e.v == id2 || e.w == id2);
+    for (const edge of edges) {
+      edge_set_border(edge.name, STYLE.edge.default.color, STYLE.edge.default.width);
+    }
+  }
   function node_link(node) {
     const el = document.createElement("li");
     const id2 = _n + node.index;
@@ -10295,22 +10349,23 @@
       scroll_to_node(id2);
     });
     el.addEventListener("mouseover", (_ev) => {
-      node_set_border(id2, "#f7e7ad", "1.5px");
+      focus_node(id2);
     });
     el.addEventListener("mouseleave", (_ev) => {
-      node_set_border(id2, "none", "0px");
+      unfocus_node(id2);
     });
     return el;
   }
-  var _filename = "";
-  var BB = 314159;
   async function show_graph(filename) {
     _filename = filename;
     const ainb = await load(filename);
     raw.setAttribute("href", `ainb_as_json_v2.0/${filename}`);
+    if (g) {
+      g.nodes().forEach((id2) => g.removeNode(id2));
+    }
     g = new graphlib_exports.Graph({ multigraph: true }).setGraph({});
-    g.graph().ranksep = 50;
-    g.graph().nodesep = 5;
+    g.graph().ranksep = ranksep.value;
+    g.graph().nodesep = nodesep.value;
     g.graph().ranker = ranker.value;
     g.graph().rankdir = rankdir.value;
     g.graph().align = align.value;
@@ -10417,6 +10472,14 @@
       this.addEventListener("mousedown", (ev) => {
         ev.stopPropagation();
       });
+      this.addEventListener("mouseover", (ev) => {
+        ev.stopPropagation();
+        focus_node(v);
+      });
+      this.addEventListener("mouseleave", (ev) => {
+        ev.stopPropagation();
+        unfocus_node(v);
+      });
       this.addEventListener("click", (ev) => {
         ev.stopPropagation();
         ev.preventDefault();
@@ -10456,6 +10519,12 @@
     show_graph(_filename);
   });
   align.addEventListener("change", (ev) => {
+    show_graph(_filename);
+  });
+  ranksep.addEventListener("input", (ev) => {
+    show_graph(_filename);
+  });
+  nodesep.addEventListener("input", (ev) => {
     show_graph(_filename);
   });
   main();
