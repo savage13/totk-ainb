@@ -1354,10 +1354,10 @@
     if (node) {
       var svg2 = node.ownerSVGElement || node;
       if (svg2.createSVGPoint) {
-        var point2 = svg2.createSVGPoint();
-        point2.x = event.clientX, point2.y = event.clientY;
-        point2 = point2.matrixTransform(node.getScreenCTM().inverse());
-        return [point2.x, point2.y];
+        var point = svg2.createSVGPoint();
+        point.x = event.clientX, point.y = event.clientY;
+        point = point.matrixTransform(node.getScreenCTM().inverse());
+        return [point.x, point.y];
       }
       if (node.getBoundingClientRect) {
         var rect2 = node.getBoundingClientRect();
@@ -3097,69 +3097,6 @@
     return line;
   }
 
-  // node_modules/d3-shape/src/curve/basis.js
-  function point(that, x2, y2) {
-    that._context.bezierCurveTo(
-      (2 * that._x0 + that._x1) / 3,
-      (2 * that._y0 + that._y1) / 3,
-      (that._x0 + 2 * that._x1) / 3,
-      (that._y0 + 2 * that._y1) / 3,
-      (that._x0 + 4 * that._x1 + x2) / 6,
-      (that._y0 + 4 * that._y1 + y2) / 6
-    );
-  }
-  function Basis(context) {
-    this._context = context;
-  }
-  Basis.prototype = {
-    areaStart: function() {
-      this._line = 0;
-    },
-    areaEnd: function() {
-      this._line = NaN;
-    },
-    lineStart: function() {
-      this._x0 = this._x1 = this._y0 = this._y1 = NaN;
-      this._point = 0;
-    },
-    lineEnd: function() {
-      switch (this._point) {
-        case 3:
-          point(this, this._x1, this._y1);
-        // falls through
-        case 2:
-          this._context.lineTo(this._x1, this._y1);
-          break;
-      }
-      if (this._line || this._line !== 0 && this._point === 1) this._context.closePath();
-      this._line = 1 - this._line;
-    },
-    point: function(x2, y2) {
-      x2 = +x2, y2 = +y2;
-      switch (this._point) {
-        case 0:
-          this._point = 1;
-          this._line ? this._context.lineTo(x2, y2) : this._context.moveTo(x2, y2);
-          break;
-        case 1:
-          this._point = 2;
-          break;
-        case 2:
-          this._point = 3;
-          this._context.lineTo((5 * this._x0 + this._x1) / 6, (5 * this._y0 + this._y1) / 6);
-        // falls through
-        default:
-          point(this, x2, y2);
-          break;
-      }
-      this._x0 = this._x1, this._x1 = x2;
-      this._y0 = this._y1, this._y1 = y2;
-    }
-  };
-  function basis_default2(context) {
-    return new Basis(context);
-  }
-
   // node_modules/d3-zoom/src/constant.js
   var constant_default5 = (x2) => () => x2;
 
@@ -3193,8 +3130,8 @@
     translate: function(x2, y2) {
       return x2 === 0 & y2 === 0 ? this : new Transform(this.k, this.x + this.k * x2, this.y + this.k * y2);
     },
-    apply: function(point2) {
-      return [point2[0] * this.k + this.x, point2[1] * this.k + this.y];
+    apply: function(point) {
+      return [point[0] * this.k + this.x, point[1] * this.k + this.y];
     },
     applyX: function(x2) {
       return x2 * this.k + this.x;
@@ -3274,11 +3211,11 @@
     function zoom2(selection2) {
       selection2.property("__zoom", defaultTransform).on("wheel.zoom", wheeled, { passive: false }).on("mousedown.zoom", mousedowned).on("dblclick.zoom", dblclicked).filter(touchable).on("touchstart.zoom", touchstarted).on("touchmove.zoom", touchmoved).on("touchend.zoom touchcancel.zoom", touchended).style("-webkit-tap-highlight-color", "rgba(0,0,0,0)");
     }
-    zoom2.transform = function(collection, transform2, point2, event) {
+    zoom2.transform = function(collection, transform2, point, event) {
       var selection2 = collection.selection ? collection.selection() : collection;
       selection2.property("__zoom", defaultTransform);
       if (collection !== selection2) {
-        schedule(collection, transform2, point2, event);
+        schedule(collection, transform2, point, event);
       } else {
         selection2.interrupt().each(function() {
           gesture(this, arguments).event(event).start().zoom(null, typeof transform2 === "function" ? transform2.apply(this, arguments) : transform2).end();
@@ -3325,13 +3262,13 @@
     function centroid(extent2) {
       return [(+extent2[0][0] + +extent2[1][0]) / 2, (+extent2[0][1] + +extent2[1][1]) / 2];
     }
-    function schedule(transition2, transform2, point2, event) {
+    function schedule(transition2, transform2, point, event) {
       transition2.on("start.zoom", function() {
         gesture(this, arguments).event(event).start();
       }).on("interrupt.zoom end.zoom", function() {
         gesture(this, arguments).event(event).end();
       }).tween("zoom", function() {
-        var that = this, args = arguments, g2 = gesture(that, args).event(event), e = extent.apply(that, args), p = point2 == null ? centroid(e) : typeof point2 === "function" ? point2.apply(that, args) : point2, w = Math.max(e[1][0] - e[0][0], e[1][1] - e[0][1]), a = that.__zoom, b = typeof transform2 === "function" ? transform2.apply(that, args) : transform2, i = interpolate(a.invert(p).concat(w / a.k), b.invert(p).concat(w / b.k));
+        var that = this, args = arguments, g2 = gesture(that, args).event(event), e = extent.apply(that, args), p = point == null ? centroid(e) : typeof point === "function" ? point.apply(that, args) : point, w = Math.max(e[1][0] - e[0][0], e[1][1] - e[0][1]), a = that.__zoom, b = typeof transform2 === "function" ? transform2.apply(that, args) : transform2, i = interpolate(a.invert(p).concat(w / a.k), b.invert(p).concat(w / b.k));
         return function(t) {
           if (t === 1) t = b;
           else {
@@ -7409,11 +7346,11 @@
     });
     return simplified;
   }
-  function intersectRect(rect2, point2) {
+  function intersectRect(rect2, point) {
     var x2 = rect2.x;
     var y2 = rect2.y;
-    var dx = point2.x - x2;
-    var dy = point2.y - y2;
+    var dx = point.x - x2;
+    var dy = point.y - y2;
     var w = rect2.width / 2;
     var h = rect2.height / 2;
     if (!dx && !dy) {
@@ -9417,8 +9354,8 @@
   }
 
   // node_modules/dagre-d3-es/src/dagre-js/intersect/intersect-node.js
-  function intersectNode(node, point2) {
-    return node.intersect(point2);
+  function intersectNode(node, point) {
+    return node.intersect(point);
   }
 
   // node_modules/dagre-d3-es/src/dagre-js/create-edge-paths.js
@@ -9625,26 +9562,26 @@
   }
 
   // node_modules/dagre-d3-es/src/dagre-js/intersect/intersect-ellipse.js
-  function intersectEllipse(node, rx, ry, point2) {
+  function intersectEllipse(node, rx, ry, point) {
     var cx = node.x;
     var cy = node.y;
-    var px = cx - point2.x;
-    var py = cy - point2.y;
+    var px = cx - point.x;
+    var py = cy - point.y;
     var det = Math.sqrt(rx * rx * py * py + ry * ry * px * px);
     var dx = Math.abs(rx * ry * px / det);
-    if (point2.x < cx) {
+    if (point.x < cx) {
       dx = -dx;
     }
     var dy = Math.abs(rx * ry * py / det);
-    if (point2.y < cy) {
+    if (point.y < cy) {
       dy = -dy;
     }
     return { x: cx + dx, y: cy + dy };
   }
 
   // node_modules/dagre-d3-es/src/dagre-js/intersect/intersect-circle.js
-  function intersectCircle(node, rx, point2) {
-    return intersectEllipse(node, rx, rx, point2);
+  function intersectCircle(node, rx, point) {
+    return intersectEllipse(node, rx, rx, point);
   }
 
   // node_modules/dagre-d3-es/src/dagre-js/intersect/intersect-line.js
@@ -9685,7 +9622,7 @@
   }
 
   // node_modules/dagre-d3-es/src/dagre-js/intersect/intersect-polygon.js
-  function intersectPolygon(node, polyPoints, point2) {
+  function intersectPolygon(node, polyPoints, point) {
     var x1 = node.x;
     var y1 = node.y;
     var intersections = [];
@@ -9702,7 +9639,7 @@
       var p2 = polyPoints[i < polyPoints.length - 1 ? i + 1 : 0];
       var intersect = intersectLine(
         node,
-        point2,
+        point,
         { x: left + p1.x, y: top + p1.y },
         { x: left + p2.x, y: top + p2.y }
       );
@@ -9716,11 +9653,11 @@
     }
     if (intersections.length > 1) {
       intersections.sort(function(p, q) {
-        var pdx = p.x - point2.x;
-        var pdy = p.y - point2.y;
+        var pdx = p.x - point.x;
+        var pdy = p.y - point.y;
         var distp = Math.sqrt(pdx * pdx + pdy * pdy);
-        var qdx = q.x - point2.x;
-        var qdy = q.y - point2.y;
+        var qdx = q.x - point.x;
+        var qdy = q.y - point.y;
         var distq = Math.sqrt(qdx * qdx + qdy * qdy);
         return distp < distq ? -1 : distp === distq ? 0 : 1;
       });
@@ -9729,11 +9666,11 @@
   }
 
   // node_modules/dagre-d3-es/src/dagre-js/intersect/intersect-rect.js
-  function intersectRect2(node, point2) {
+  function intersectRect2(node, point) {
     var x2 = node.x;
     var y2 = node.y;
-    var dx = point2.x - x2;
-    var dy = point2.y - y2;
+    var dx = point.x - x2;
+    var dy = point.y - y2;
     var w = node.width / 2;
     var h = node.height / 2;
     var sx, sy;
@@ -9765,8 +9702,8 @@
   }
   function rect(parent, bbox, node) {
     var shapeSvg = parent.insert("rect", ":first-child").attr("rx", node.rx).attr("ry", node.ry).attr("x", -bbox.width / 2).attr("y", -bbox.height / 2).attr("width", bbox.width).attr("height", bbox.height);
-    node.intersect = function(point2) {
-      return intersectRect2(node, point2);
+    node.intersect = function(point) {
+      return intersectRect2(node, point);
     };
     return shapeSvg;
   }
@@ -9774,16 +9711,16 @@
     var rx = bbox.width / 2;
     var ry = bbox.height / 2;
     var shapeSvg = parent.insert("ellipse", ":first-child").attr("x", -bbox.width / 2).attr("y", -bbox.height / 2).attr("rx", rx).attr("ry", ry);
-    node.intersect = function(point2) {
-      return intersectEllipse(node, rx, ry, point2);
+    node.intersect = function(point) {
+      return intersectEllipse(node, rx, ry, point);
     };
     return shapeSvg;
   }
   function circle(parent, bbox, node) {
     var r = Math.max(bbox.width, bbox.height) / 2;
     var shapeSvg = parent.insert("circle", ":first-child").attr("x", -bbox.width / 2).attr("y", -bbox.height / 2).attr("r", r);
-    node.intersect = function(point2) {
-      return intersectCircle(node, r, point2);
+    node.intersect = function(point) {
+      return intersectCircle(node, r, point);
     };
     return shapeSvg;
   }
@@ -9942,7 +9879,9 @@
 
   // src/ainb.ts
   var AINB = class _AINB {
+    nodes;
     constructor() {
+      this.nodes = [];
     }
     static async from_file(filename) {
       const res = await fetch(filename);
@@ -9950,6 +9889,26 @@
       let v = Object.assign(new _AINB(), data);
       v.nodes = v.Nodes = v.Nodes.map((x2) => Node.from(x2));
       v.blackboard = flatten_links(v.Blackboard || {});
+      v.io = {};
+      for (const node of v.nodes) {
+        for (const input of node.inputs) {
+          if (!input.Sources) {
+            let key = input["Node Index"];
+            if (!(key in v.io)) {
+              v.io[key] = [];
+            }
+            v.io[key].push(Object.assign({}, input, { index: node.index }));
+          } else {
+            for (const src of input.Sources) {
+              let key = src["Node Index"];
+              if (!(key in v.io)) {
+                v.io[key] = [];
+              }
+              v.io[key].push(Object.assign({}, src, { index: node.index }));
+            }
+          }
+        }
+      }
       return v;
     }
   };
@@ -10183,7 +10142,20 @@
     el.append(...els);
     return el;
   }
-  function addSection(node, el, header, key) {
+  function $node(id2, className = void 0) {
+    const el = document.createElement("span");
+    el.textContent = `node: ${id2}`;
+    if (className) {
+      el.classList.add(className);
+    }
+    el.addEventListener("click", (ev) => {
+      scroll_to_node("n" + id2);
+      ev.stopPropagation();
+      ev.preventDefault();
+    });
+    return el;
+  }
+  function addSection(node, el, header, key, ainb, _node) {
     if (!node || !node[key]) {
       return;
     }
@@ -10192,17 +10164,50 @@
       return;
     }
     el.append($txt(header, "section"));
+    let outputs = ainb.io[_node.index] || [];
+    let k = 0;
     for (const type2 of Object.keys(im)) {
       for (const item of im[type2]) {
         let parts = [$span(`${item.Name} : `), $span(`${type2}`, "typename")];
         if (item["Default Value"] !== void 0) {
           parts.push($span(` = ${item["Default Value"]} (default)`, "typevalue"));
         }
+        if (key == "Outputs") {
+          const ref = outputs.find((v) => v["Output Index"] == k);
+          if (ref) {
+            parts.push($span(" "));
+            parts.push($node(ref.index, "nodelink"));
+            if (ref.name) {
+              parts.push($span(" " + ref.name, "typevalue"));
+            }
+          }
+        }
+        if (key == "Inputs") {
+          if (item["Node Index"] >= 0) {
+            parts.push($span(" "));
+            parts.push($node(item["Node Index"], "nodelink"));
+          }
+        }
+        if (item.Sources && item.Sources.length) {
+          let ul = document.createElement("ul");
+          for (const src of item.Sources) {
+            let idx = src["Node Index"];
+            let odx = src["Output Index"];
+            let name = ainb.nodes[idx].outputs[odx].name;
+            ul.appendChild($li([
+              $span(name + " "),
+              $node(idx, "nodelink"),
+              $span(` index: ${odx}`, "typevalue")
+            ]));
+          }
+          parts.push(ul);
+        }
         el.append($li(parts, "item"));
+        k += 1;
       }
     }
   }
-  function create_node(node) {
+  function create_node(node, ainb) {
     const el = document.createElement("div");
     el.classList.add("nodedata");
     if (node.name) {
@@ -10210,9 +10215,9 @@
     } else {
       el.appendChild($txt(`${node.type} (${node.index})`, "header"));
     }
-    addSection(node, el, "Properties", "Properties");
-    addSection(node.Parameters, el, "Inputs", "Inputs");
-    addSection(node.Parameters, el, "Outputs", "Outputs");
+    addSection(node, el, "Properties", "Properties", ainb, node);
+    addSection(node.Parameters, el, "Inputs", "Inputs", ainb, node);
+    addSection(node.Parameters, el, "Outputs", "Outputs", ainb, node);
     return el;
   }
   function node_color(node) {
@@ -10324,6 +10329,10 @@
     });
     el.select("path").style("stroke", color2).style("stroke-width", width2).style("fill", "color");
     el.select("marker").select("path").style("fill", color2);
+    el = selectAll_default2("g.edgeLabel").filter((v) => {
+      return v.name == id2;
+    });
+    el.select("tspan").style("fill", color2);
   }
   function focus_node(id2) {
     node_set_border(id2, STYLE.node.focus.color, STYLE.node.focus.width);
@@ -10383,7 +10392,7 @@
       g.setEdge(s, t, options, key);
     };
     const style2 = "stroke: white; fill: none; stroke-width: 2px;";
-    const curve = basis_default2;
+    const curve = linear_default;
     const labelStyle = "fill: white; stroke-width: 0px; font-family: sans-serif; font-size: 1.1em;";
     const arrowheadStyle = "fill: white;";
     nodelist.replaceChildren();
@@ -10391,7 +10400,7 @@
     for (const node of ainb.nodes) {
       let nodeStyle = `fill: ${node_color(node)};`;
       nodelist.appendChild(node_link(node));
-      g.setNode(_n + node.index, { label: create_node(node), style: nodeStyle, rx: 13, ry: 13 });
+      g.setNode(_n + node.index, { label: create_node(node, ainb), style: nodeStyle, rx: 13, ry: 13 });
       for (const link of node.inputs) {
         if (!link.Sources) {
           if (link.index !== void 0 && link.index >= 0) {
@@ -10414,9 +10423,14 @@
         } else {
           for (const src of link.Sources) {
             let idx = src["Node Index"];
+            let label = link.label;
             if (idx >= 0) {
+              const odx = src["Output Index"];
+              if (odx >= 0 && ainb.nodes && ainb.nodes[idx] && ainb.nodes[idx].outputs && ainb.nodes[idx].outputs[odx] && ainb.nodes[idx].outputs[odx].name) {
+                label = ainb.nodes[idx].outputs[odx].name;
+              }
               setEdge(idx, node.index, {
-                label: link.label,
+                label,
                 style: style2,
                 curve,
                 labelStyle,
@@ -10451,6 +10465,9 @@
     for (const node of ainb.nodes) {
       for (const plug of node.plugs) {
         if (plug.index >= 0) {
+          if (plug.name.includes("Multi")) {
+            continue;
+          }
           setEdge(plug.index, node.index, {
             label: plug.label,
             style: style2,

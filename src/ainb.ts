@@ -1,7 +1,8 @@
 
 export class AINB {
+    nodes: Node[];
     constructor() {
-
+        this.nodes = []
     }
     static async from_file(filename: string) {
         const res = await fetch(filename)
@@ -9,6 +10,26 @@ export class AINB {
         let v = Object.assign(new AINB(), data)
         v.nodes = v.Nodes = v.Nodes.map((x: any) => Node.from(x))
         v.blackboard = flatten_links(v.Blackboard || {})
+        v.io = {}
+        for (const node of v.nodes) {
+            for (const input of node.inputs) {
+                if (!input.Sources) {
+                    let key = input['Node Index']
+                    if (!(key in v.io)) {
+                        v.io[key] = []
+                    }
+                    v.io[key].push(Object.assign({}, input, { index: node.index }))
+                } else {
+                    for (const src of input.Sources) {
+                        let key = src['Node Index']
+                        if (!(key in v.io)) {
+                            v.io[key] = []
+                        }
+                        v.io[key].push(Object.assign({}, src, { index: node.index }))
+                    }
+                }
+            }
+        }
         return v
     }
 }

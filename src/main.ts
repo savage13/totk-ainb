@@ -131,8 +131,21 @@ function $li(els: HTMLElement | HTMLElement[], className: any = undefined) {
     return el
 }
 
+function $node(id: string, className: any = undefined) {
+    const el = document.createElement('span')
+    el.textContent = `node: ${id}`
+    if (className) {
+        el.classList.add(className)
+    }
+    el.addEventListener('click', (ev) => {
+        scroll_to_node('n' + id)
+        ev.stopPropagation()
+        ev.preventDefault()
+    })
+    return el
+}
 
-function addSection(node: Node, el: HTMLElement, header: string, key: string) {
+function addSection(node: Node, el: HTMLElement, header: string, key: string, ainb: AINB, _node: Node) {
     if (!node || !node[key]) {
         return
     }
@@ -141,19 +154,53 @@ function addSection(node: Node, el: HTMLElement, header: string, key: string) {
         return
     }
     el.append($txt(header, 'section'))
+    let outputs = ainb.io[_node.index] || []
+    let k = 0
     for (const type of Object.keys(im)) {
+        //console.log(_node.index, k)
         for (const item of im[type]) {
             let parts = [$span(`${item.Name} : `), $span(`${type}`, 'typename')]
             if (item['Default Value'] !== undefined) {
                 parts.push($span(` = ${item['Default Value']} (default)`, 'typevalue'))
             }
+            if (key == "Outputs") {
+                const ref = outputs.find((v: any) => v['Output Index'] == k)
+                if (ref) {
+                    parts.push($span(" "))
+                    parts.push($node(ref.index, 'nodelink'))
+                    if (ref.name) {
+                        parts.push($span(" " + ref.name, 'typevalue'))
+                    }
+                }
+            }
+            if (key == "Inputs") {
+                if (item['Node Index'] >= 0) {
+                    parts.push($span(" "))
+                    parts.push($node(item['Node Index'], "nodelink"))
+                }
+            }
+            if (item.Sources && item.Sources.length) { // BoolMulti / Input
+                let ul = document.createElement('ul')
+                for (const src of item.Sources) {
+                    let idx = src['Node Index']
+                    let odx = src['Output Index']
+                    let name = ainb.nodes[idx].outputs[odx].name
+                    ul.appendChild($li([
+                        $span(name + " "),
+                        $node(idx, 'nodelink'),
+                        $span(` index: ${odx}`, 'typevalue')
+                    ]))
+                }
+                parts.push(ul)
+            }
             el.append($li(parts, 'item'))
+            k += 1
+
         }
     }
 }
 
-
-function create_node(node: Node) {
+function create_node(node: Node, ainb: AINB) {
     const el = document.createElement('div')
     el.classList.add('nodedata')
     if (node.name) {
@@ -161,9 +208,9 @@ function create_node(node: Node) {
     } else {
         el.appendChild($txt(`${node.type} (${node.index})`, "header"))
     }
-    addSection(node, el, "Properties", "Properties")
-    addSection(node.Parameters, el, "Inputs", "Inputs")
-    addSection(node.Parameters, el, "Outputs", "Outputs")
+    addSection(node, el, "Properties", "Properties", ainb, node)
+    addSection(node.Parameters, el, "Inputs", "Inputs", ainb, node)
+    addSection(node.Parameters, el, "Outputs", "Outputs", ainb, node)
     return el
 }
 
@@ -257,6 +304,8 @@ function edge_set_border(id: string, color: string, width: string) {
     let el = d3.selectAll('g.edgePath').filter((v: any) => { return v.name == id })
     el.select('path').style('stroke', color).style('stroke-width', width).style('fill', 'color')
     el.select('marker').select('path').style('fill', color)
+    el = d3.selectAll('g.edgeLabel').filter((v: any) => { return v.name == id })
+    el.select('tspan').style('fill', color)
 }
 
 function focus_node(id: string) {
@@ -323,7 +372,7 @@ async function show_graph(filename: string,) {
     }
 
     const style = 'stroke: white; fill: none; stroke-width: 2px;'
-    const curve = d3.curveBasis
+    const curve = d3.curveLinear
     const labelStyle = 'fill: white; stroke-width: 0px; font-family: sans-serif; font-size: 1.1em;'
     const arrowheadStyle = 'fill: white;'
 
@@ -333,7 +382,7 @@ async function show_graph(filename: string,) {
     for (const node of ainb.nodes) {
         let nodeStyle = `fill: ${node_color(node)};`
         nodelist.appendChild(node_link(node))
-        g.setNode(_n + node.index, { label: create_node(node), style: nodeStyle, rx: 13, ry: 13 })
+        g.setNode(_n + node.index, { label: create_node(node, ainb), style: nodeStyle, rx: 13, ry: 13 })
         // Inputs
         for (const link of node.inputs) {
             if (!link.Sources) {
@@ -351,9 +400,16 @@ async function show_graph(filename: string,) {
                 // MultiSource
                 for (const src of link.Sources) {
                     let idx = src['Node Index']
+                    let label = link.label
                     if (idx >= 0) {
+                        const odx = src['Output Index']
+                        if (odx >= 0 && ainb.nodes && ainb.nodes[idx] &&
+                            ainb.nodes[idx].outputs && ainb.nodes[idx].outputs[odx] &&
+                            ainb.nodes[idx].outputs[odx].name) {
+                            label = ainb.nodes[idx].outputs[odx].name
+                        }
                         setEdge(idx, node.index, {
-                            label: link.label, style, curve, labelStyle, arrowheadStyle,
+                            label, style, curve, labelStyle, arrowheadStyle,
                         })
                     }
                 }
@@ -384,6 +440,9 @@ async function show_graph(filename: string,) {
     for (const node of ainb.nodes) {
         for (const plug of node.plugs) {
             if (plug.index >= 0) {
+                if (plug.name.includes("Multi")) {
+                    continue
+                }
                 setEdge(plug.index, node.index, {
                     label: plug.label, style, curve, labelStyle, arrowheadStyle,
                 })
