@@ -40,14 +40,28 @@ class Link {
     'Condition Min': number | null
     'Condition Max': number | null
     'Is Default': boolean | null
-    constructor() { }
-    static from(type: string, data: any) {
+    'Is Output': boolean | null
+    type: string;
+    vartype: string;
+    index: number;
+    name: string | null;
+    constructor() {
+        this.type = ""
+        this.index = -1
+        this.name = null
+        this.vartype = ""
+    }
+    static from(type: string, vartype: string, data: any) {
         let v = Object.assign(new Link(), data)
         v.type = type
         v.index = v['Node Index']
         v.name = v['Name']
+        v.vartype = vartype
         return v
+    }
 
+    get is_output() {
+        return this.vartype == "Outputs" && this['Is Output']
     }
 
     get label() {
@@ -63,11 +77,11 @@ class Link {
     }
 }
 
-function flatten_links(values: any) {
+function flatten_links(values: any, kind: string) {
     let out = []
     for (const type of Object.keys(values)) {
         for (const item of values[type]) {
-            out.push(Link.from(type, item))
+            out.push(Link.from(type, kind, item))
         }
     }
     return out
@@ -81,7 +95,10 @@ class Node {
     name: string | undefined;
     type: string;
     index: number;
+
     constructor() {
+        this.index = -1
+        this.type = ""
     }
     static from(data: any) {
         let v = Object.assign(new Node(), data)
@@ -90,9 +107,10 @@ class Node {
         v.index = v['Node Index']
         v.name = v['Name']
         v.type = v['Node Type']
-        v.plugs = flatten_links(v.Plugs)
-        v.inputs = flatten_links(v.Parameters.Inputs)
-        v.outputs = flatten_links(v.Parameters.Outputs)
+        v.properties = flatten_links(v.Properties, "Properties")
+        v.plugs = flatten_links(v.Plugs, "Plugs")
+        v.inputs = flatten_links(v.Parameters.Inputs, "Inputs")
+        v.outputs = flatten_links(v.Parameters.Outputs, "Outputs")
         return v
     }
     get label() {

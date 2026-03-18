@@ -105,11 +105,15 @@ async function load(filename: string) {
     return AINB.from_file(`ainb_as_json_v2.0/${filename}`)
 }
 
+function to_list(input: string): string[] {
+    return input.split(/\s+/).filter(v => v.length)
+}
+
 function $txt(t: string, className: any = undefined) {
     const el = document.createElement('div')
     el.textContent = t
     if (className) {
-        el.classList.add(className)
+        el.classList.add(...to_list(className))
     }
     return el
 }
@@ -117,14 +121,14 @@ function $span(t: string, className: any = undefined) {
     const el = document.createElement('span')
     el.textContent = t
     if (className) {
-        el.classList.add(className)
+        el.classList.add(...to_list(className))
     }
     return el
 }
 function $li(els: HTMLElement | HTMLElement[], className: any = undefined) {
     const el = document.createElement('li')
     if (className) {
-        el.classList.add(className)
+        el.classList.add(...to_list(className))
     }
     if (!Array.isArray(els)) { els = [els] }
     el.append(...els)
@@ -135,7 +139,7 @@ function $node(id: string, className: any = undefined) {
     const el = document.createElement('span')
     el.textContent = `node: ${id}`
     if (className) {
-        el.classList.add(className)
+        el.classList.add(...to_list(className))
     }
     el.addEventListener('click', (ev) => {
         scroll_to_node('n' + id)
@@ -145,58 +149,56 @@ function $node(id: string, className: any = undefined) {
     return el
 }
 
-function addSection(node: Node, el: HTMLElement, header: string, key: string, ainb: AINB, _node: Node) {
-    if (!node || !node[key]) {
-        return
-    }
-    const im = node[key]
-    if (Object.keys(im).length == 0) {
+function addSection(links: Links, el: HTMLElement, header: string, key: string, ainb: AINB, _node: Node) {
+    if (!links || !links.length) {
         return
     }
     el.append($txt(header, 'section'))
     let outputs = ainb.io[_node.index] || []
     let k = 0
-    for (const type of Object.keys(im)) {
+    for (const item of links) {
         //console.log(_node.index, k)
-        for (const item of im[type]) {
-            let parts = [$span(`${item.Name} : `), $span(`${type}`, 'typename')]
-            if (item['Default Value'] !== undefined) {
-                parts.push($span(` = ${item['Default Value']} (default)`, 'typevalue'))
-            }
-            if (key == "Outputs") {
-                const ref = outputs.find((v: any) => v['Output Index'] == k)
-                if (ref) {
-                    parts.push($span(" "))
-                    parts.push($node(ref.index, 'nodelink'))
-                    if (ref.name) {
-                        parts.push($span(" " + ref.name, 'typevalue'))
-                    }
-                }
-            }
-            if (key == "Inputs") {
-                if (item['Node Index'] >= 0) {
-                    parts.push($span(" "))
-                    parts.push($node(item['Node Index'], "nodelink"))
-                }
-            }
-            if (item.Sources && item.Sources.length) { // BoolMulti / Input
-                let ul = document.createElement('ul')
-                for (const src of item.Sources) {
-                    let idx = src['Node Index']
-                    let odx = src['Output Index']
-                    let name = ainb.nodes[idx].outputs[odx].name
-                    ul.appendChild($li([
-                        $span(name + " "),
-                        $node(idx, 'nodelink'),
-                        $span(` index: ${odx}`, 'typevalue')
-                    ]))
-                }
-                parts.push(ul)
-            }
-            el.append($li(parts, 'item'))
-            k += 1
+        //for (const item of im[type]) {
+        const ref = outputs.find((v: any) => v['Output Index'] == k)
+        let strike = (!item.is_output && key == "Outputs" && !ref) ? "strike" : ""
+        let parts = [$span(`${item.Name} : `, strike), $span(`${item.type}`, `typename ${strike}`)]
 
+        if (item['Default Value'] !== undefined) {
+            parts.push($span(` = ${item['Default Value']} (default)`, 'typevalue'))
         }
+        if (key == "Outputs") {
+            if (ref) {
+                parts.push($span(" "))
+                parts.push($node(ref.index, `nodelink ${strike}`))
+                if (ref.name) {
+                    parts.push($span(" " + ref.name, `typevalue ${strike}`))
+                }
+            }
+        }
+        if (key == "Inputs") {
+            if (item['Node Index'] >= 0) {
+                parts.push($span(" "))
+                parts.push($node(item['Node Index'], "nodelink"))
+            }
+        }
+        if (item.Sources && item.Sources.length) { // BoolMulti / Input
+            let ul = document.createElement('ul')
+            for (const src of item.Sources) {
+                let idx = src['Node Index']
+                let odx = src['Output Index']
+                let name = ainb.nodes[idx].outputs[odx].name
+                ul.appendChild($li([
+                    $span(name + " "),
+                    $node(idx, 'nodelink'),
+                    $span(` index: ${odx}`, 'typevalue')
+                ]))
+            }
+            parts.push(ul)
+        }
+        el.append($li(parts, 'item'))
+        k += 1
+
+        //}
     }
 }
 
@@ -208,9 +210,9 @@ function create_node(node: Node, ainb: AINB) {
     } else {
         el.appendChild($txt(`${node.type} (${node.index})`, "header"))
     }
-    addSection(node, el, "Properties", "Properties", ainb, node)
-    addSection(node.Parameters, el, "Inputs", "Inputs", ainb, node)
-    addSection(node.Parameters, el, "Outputs", "Outputs", ainb, node)
+    addSection(node.properties, el, "Properties", "Properties", ainb, node)
+    addSection(node.inputs, el, "Inputs", "Inputs", ainb, node)
+    addSection(node.outputs, el, "Outputs", "Outputs", ainb, node)
     return el
 }
 

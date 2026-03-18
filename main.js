@@ -9918,14 +9918,27 @@
     "Condition Min";
     "Condition Max";
     "Is Default";
+    "Is Output";
+    type;
+    vartype;
+    index;
+    name;
     constructor() {
+      this.type = "";
+      this.index = -1;
+      this.name = null;
+      this.vartype = "";
     }
-    static from(type2, data) {
+    static from(type2, vartype, data) {
       let v = Object.assign(new _Link(), data);
       v.type = type2;
       v.index = v["Node Index"];
       v.name = v["Name"];
+      v.vartype = vartype;
       return v;
+    }
+    get is_output() {
+      return this.vartype == "Outputs" && this["Is Output"];
     }
     get label() {
       if (this["Condition Min"] != void 0 && this["Condition Max"] != void 0) {
@@ -9939,11 +9952,11 @@
       return this.Name;
     }
   };
-  function flatten_links(values2) {
+  function flatten_links(values2, kind) {
     let out = [];
     for (const type2 of Object.keys(values2)) {
       for (const item of values2[type2]) {
-        out.push(Link.from(type2, item));
+        out.push(Link.from(type2, kind, item));
       }
     }
     return out;
@@ -9957,6 +9970,8 @@
     type;
     index;
     constructor() {
+      this.index = -1;
+      this.type = "";
     }
     static from(data) {
       let v = Object.assign(new _Node(), data);
@@ -9965,9 +9980,10 @@
       v.index = v["Node Index"];
       v.name = v["Name"];
       v.type = v["Node Type"];
-      v.plugs = flatten_links(v.Plugs);
-      v.inputs = flatten_links(v.Parameters.Inputs);
-      v.outputs = flatten_links(v.Parameters.Outputs);
+      v.properties = flatten_links(v.Properties, "Properties");
+      v.plugs = flatten_links(v.Plugs, "Plugs");
+      v.inputs = flatten_links(v.Parameters.Inputs, "Inputs");
+      v.outputs = flatten_links(v.Parameters.Outputs, "Outputs");
       return v;
     }
     get label() {
@@ -10115,11 +10131,14 @@
   async function load(filename) {
     return AINB.from_file(`ainb_as_json_v2.0/${filename}`);
   }
+  function to_list(input) {
+    return input.split(/\s+/).filter((v) => v.length);
+  }
   function $txt(t, className = void 0) {
     const el = document.createElement("div");
     el.textContent = t;
     if (className) {
-      el.classList.add(className);
+      el.classList.add(...to_list(className));
     }
     return el;
   }
@@ -10127,14 +10146,14 @@
     const el = document.createElement("span");
     el.textContent = t;
     if (className) {
-      el.classList.add(className);
+      el.classList.add(...to_list(className));
     }
     return el;
   }
   function $li(els, className = void 0) {
     const el = document.createElement("li");
     if (className) {
-      el.classList.add(className);
+      el.classList.add(...to_list(className));
     }
     if (!Array.isArray(els)) {
       els = [els];
@@ -10146,7 +10165,7 @@
     const el = document.createElement("span");
     el.textContent = `node: ${id2}`;
     if (className) {
-      el.classList.add(className);
+      el.classList.add(...to_list(className));
     }
     el.addEventListener("click", (ev) => {
       scroll_to_node("n" + id2);
@@ -10155,56 +10174,51 @@
     });
     return el;
   }
-  function addSection(node, el, header, key, ainb, _node) {
-    if (!node || !node[key]) {
-      return;
-    }
-    const im = node[key];
-    if (Object.keys(im).length == 0) {
+  function addSection(links, el, header, key, ainb, _node) {
+    if (!links || !links.length) {
       return;
     }
     el.append($txt(header, "section"));
     let outputs = ainb.io[_node.index] || [];
     let k = 0;
-    for (const type2 of Object.keys(im)) {
-      for (const item of im[type2]) {
-        let parts = [$span(`${item.Name} : `), $span(`${type2}`, "typename")];
-        if (item["Default Value"] !== void 0) {
-          parts.push($span(` = ${item["Default Value"]} (default)`, "typevalue"));
-        }
-        if (key == "Outputs") {
-          const ref = outputs.find((v) => v["Output Index"] == k);
-          if (ref) {
-            parts.push($span(" "));
-            parts.push($node(ref.index, "nodelink"));
-            if (ref.name) {
-              parts.push($span(" " + ref.name, "typevalue"));
-            }
-          }
-        }
-        if (key == "Inputs") {
-          if (item["Node Index"] >= 0) {
-            parts.push($span(" "));
-            parts.push($node(item["Node Index"], "nodelink"));
-          }
-        }
-        if (item.Sources && item.Sources.length) {
-          let ul = document.createElement("ul");
-          for (const src of item.Sources) {
-            let idx = src["Node Index"];
-            let odx = src["Output Index"];
-            let name = ainb.nodes[idx].outputs[odx].name;
-            ul.appendChild($li([
-              $span(name + " "),
-              $node(idx, "nodelink"),
-              $span(` index: ${odx}`, "typevalue")
-            ]));
-          }
-          parts.push(ul);
-        }
-        el.append($li(parts, "item"));
-        k += 1;
+    for (const item of links) {
+      const ref = outputs.find((v) => v["Output Index"] == k);
+      let strike = !item.is_output && key == "Outputs" && !ref ? "strike" : "";
+      let parts = [$span(`${item.Name} : `, strike), $span(`${item.type}`, `typename ${strike}`)];
+      if (item["Default Value"] !== void 0) {
+        parts.push($span(` = ${item["Default Value"]} (default)`, "typevalue"));
       }
+      if (key == "Outputs") {
+        if (ref) {
+          parts.push($span(" "));
+          parts.push($node(ref.index, `nodelink ${strike}`));
+          if (ref.name) {
+            parts.push($span(" " + ref.name, `typevalue ${strike}`));
+          }
+        }
+      }
+      if (key == "Inputs") {
+        if (item["Node Index"] >= 0) {
+          parts.push($span(" "));
+          parts.push($node(item["Node Index"], "nodelink"));
+        }
+      }
+      if (item.Sources && item.Sources.length) {
+        let ul = document.createElement("ul");
+        for (const src of item.Sources) {
+          let idx = src["Node Index"];
+          let odx = src["Output Index"];
+          let name = ainb.nodes[idx].outputs[odx].name;
+          ul.appendChild($li([
+            $span(name + " "),
+            $node(idx, "nodelink"),
+            $span(` index: ${odx}`, "typevalue")
+          ]));
+        }
+        parts.push(ul);
+      }
+      el.append($li(parts, "item"));
+      k += 1;
     }
   }
   function create_node(node, ainb) {
@@ -10215,9 +10229,9 @@
     } else {
       el.appendChild($txt(`${node.type} (${node.index})`, "header"));
     }
-    addSection(node, el, "Properties", "Properties", ainb, node);
-    addSection(node.Parameters, el, "Inputs", "Inputs", ainb, node);
-    addSection(node.Parameters, el, "Outputs", "Outputs", ainb, node);
+    addSection(node.properties, el, "Properties", "Properties", ainb, node);
+    addSection(node.inputs, el, "Inputs", "Inputs", ainb, node);
+    addSection(node.outputs, el, "Outputs", "Outputs", ainb, node);
     return el;
   }
   function node_color(node) {
