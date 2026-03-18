@@ -434,18 +434,15 @@ async function show_graph(filename: string,) {
         const el = document.createElement('div')
         el.classList.add('nodedata')
         el.append($txt("Blackboard", "header"))
-        addSection({ Outputs: ainb.Blackboard }, el, "Outputs", "Outputs")
+        addSection(ainb.blackboard, el, "Outputs", "Blackboard", ainb, {})
         g.setNode(`n${BB}`, { label: el, style: nodeStyle, rx: 13, ry: 13 })
 
     }
     // Plugs
     for (const node of ainb.nodes) {
         for (const plug of node.plugs) {
-            if (plug.index >= 0) {
-                if (plug.name.includes("Multi")) {
-                    continue
-                }
-                setEdge(plug.index, node.index, {
+            if (plug.type == "Child" && plug.index >= 0) {
+                setEdge(node.index, plug.index, {
                     label: plug.label, style, curve, labelStyle, arrowheadStyle,
                 })
             }

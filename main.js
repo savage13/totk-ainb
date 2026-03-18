@@ -9888,7 +9888,7 @@
       let data = await res.json();
       let v = Object.assign(new _AINB(), data);
       v.nodes = v.Nodes = v.Nodes.map((x2) => Node.from(x2));
-      v.blackboard = flatten_links(v.Blackboard || {});
+      v.blackboard = flatten_links(v.Blackboard || {}, "Blackboard");
       v.io = {};
       for (const node of v.nodes) {
         for (const input of node.inputs) {
@@ -10473,16 +10473,13 @@
       const el = document.createElement("div");
       el.classList.add("nodedata");
       el.append($txt("Blackboard", "header"));
-      addSection({ Outputs: ainb.Blackboard }, el, "Outputs", "Outputs");
+      addSection(ainb.blackboard, el, "Outputs", "Blackboard", ainb, {});
       g.setNode(`n${BB}`, { label: el, style: nodeStyle, rx: 13, ry: 13 });
     }
     for (const node of ainb.nodes) {
       for (const plug of node.plugs) {
-        if (plug.index >= 0) {
-          if (plug.name.includes("Multi")) {
-            continue;
-          }
-          setEdge(plug.index, node.index, {
+        if (plug.type == "Child" && plug.index >= 0) {
+          setEdge(node.index, plug.index, {
             label: plug.label,
             style: style2,
             curve,

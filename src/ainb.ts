@@ -9,7 +9,7 @@ export class AINB {
         let data = await res.json()
         let v = Object.assign(new AINB(), data)
         v.nodes = v.Nodes = v.Nodes.map((x: any) => Node.from(x))
-        v.blackboard = flatten_links(v.Blackboard || {})
+        v.blackboard = flatten_links(v.Blackboard || {}, "Blackboard")
         v.io = {}
         for (const node of v.nodes) {
             for (const input of node.inputs) {
